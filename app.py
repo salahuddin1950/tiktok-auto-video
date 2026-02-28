@@ -47,3 +47,23 @@ def home():
         </body>
     </html>
     """
+from fastapi.responses import HTMLResponse
+
+@app.get("/", response_class=HTMLResponse)
+def home():
+    return """
+    <html>
+        <head>
+            <title>TikTok Auto Video</title>
+        </head>
+        <body style="text-align:center;font-family:sans-serif;margin-top:50px;">
+            <h1>🚀 TikTok Auto Video Generator</h1>
+            <p>ระบบออนไลน์แล้ว</p>
+            <form action="/generate" method="post">
+                <input type="text" name="link" placeholder="วางลิงก์ TikTok ที่นี่" style="width:300px;padding:10px;" />
+                <br><br>
+                <button type="submit" style="padding:10px 20px;">Generate Video</button>
+            </form>
+        </body>
+    </html>
+    """
