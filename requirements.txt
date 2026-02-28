@@ -1,4 +1,4 @@
 fastapi
 uvicorn
-edge-tts
 python-multipart
+openai
