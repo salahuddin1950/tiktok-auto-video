@@ -1,14 +1,10 @@
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+from fastapi import FastAPI, Form
+from fastapi.responses import HTMLResponse, FileResponse
 import subprocess
 import uuid
+import os
 
 app = FastAPI()
-
-class Product(BaseModel):
-    name: str
-    description: str
 
 @app.get("/", response_class=HTMLResponse)
 def home():
@@ -19,15 +15,19 @@ def home():
         </head>
         <body style="text-align:center;font-family:sans-serif;margin-top:50px;">
             <h1>🚀 TikTok Auto Video Generator</h1>
-            <p>ระบบออนไลน์แล้ว</p>
+            <form action="/generate" method="post">
+                <input type="text" name="name" placeholder="ชื่อสินค้า" required style="width:300px;padding:10px;"><br><br>
+                <input type="text" name="description" placeholder="รายละเอียดสินค้า" required style="width:300px;padding:10px;"><br><br>
+                <button type="submit" style="padding:10px 20px;">Generate Video</button>
+            </form>
         </body>
     </html>
     """
 
 @app.post("/generate")
-async def generate_video(product: Product):
+async def generate_video(name: str = Form(...), description: str = Form(...)):
 
-    script = f"{product.name} กำลังมาแรงในตอนนี้! {product.description} สนใจดูรายละเอียดเพิ่มเติมที่ลิงก์ด้านล่างเลย"
+    script = f"{name} กำลังมาแรงในตอนนี้! {description} สนใจดูรายละเอียดเพิ่มเติมที่ลิงก์ด้านล่างเลย"
 
     filename = str(uuid.uuid4())
 
@@ -46,4 +46,4 @@ async def generate_video(product: Product):
         f"{filename}.mp4"
     ])
 
-    return {"video": f"{filename}.mp4"}
+    return FileResponse(f"{filename}.mp4", media_type="video/mp4", filename="tiktok_video.mp4")
