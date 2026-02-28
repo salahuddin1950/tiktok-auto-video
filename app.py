@@ -1,49 +1,93 @@
-from fastapi import FastAPI, Form
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi import FastAPI, Form, UploadFile, File
+from fastapi.responses import HTMLResponse
 import subprocess
 import uuid
-import os
+import random
+import shutil
 
 app = FastAPI()
+
+# 🔥 Hook เปิดคลิป
+hooks = [
+"หยุดก่อน! ตัวนี้กำลังไวรัลมาก 🔥",
+"ใครกำลังมองหาของดีราคาคุ้ม ต้องดูอันนี้เลย",
+"เตือนแล้วนะ เดี๋ยวของหมด!",
+"ไม่ซื้อวันนี้อาจพลาดของดีไปเลย",
+"ตัวนี้กำลังมาแรงสุด ๆ ในตอนนี้"
+]
+
+# 🔥 Call to Action ปิดท้าย
+ctas = [
+"กดดูรายละเอียดที่ลิงก์ด้านล่างเลยนะคะ 💕",
+"สนใจกดสั่งซื้อได้เลยค่ะ 🔥",
+"ของมีจำนวนจำกัด รีบเลยนะคะ",
+"ช้าหมด อดนะคะ!",
+"กดตะกร้าได้เลยตอนนี้"
+]
 
 @app.get("/", response_class=HTMLResponse)
 def home():
     return """
     <html>
-        <head>
-            <title>TikTok Auto Video</title>
-        </head>
-        <body style="text-align:center;font-family:sans-serif;margin-top:50px;">
-            <h1>🚀 TikTok Auto Video Generator</h1>
-            <form action="/generate" method="post">
-                <input type="text" name="name" placeholder="ชื่อสินค้า" required style="width:300px;padding:10px;"><br><br>
-                <input type="text" name="description" placeholder="รายละเอียดสินค้า" required style="width:300px;padding:10px;"><br><br>
-                <button type="submit" style="padding:10px 20px;">Generate Video</button>
-            </form>
-        </body>
+    <body style="text-align:center;font-family:sans-serif;margin-top:30px;">
+    <h2>🔥 TikTok Auto Seller Step 1 🔥</h2>
+    <form action="/generate" method="post" enctype="multipart/form-data">
+    <input name="name" placeholder="ชื่อสินค้า" required><br><br>
+    <input name="benefits" placeholder="จุดเด่นสินค้า (คั่นด้วย , )" required><br><br>
+    <input type="number" name="count" value="3" min="1" max="10"><br><br>
+    <input type="file" name="image" required><br><br>
+    <button type="submit">🚀 สร้างคลิป</button>
+    </form>
+    </body>
     </html>
     """
 
 @app.post("/generate")
-async def generate_video(name: str = Form(...), description: str = Form(...)):
+async def generate(
+    name: str = Form(...),
+    benefits: str = Form(...),
+    count: int = Form(...),
+    image: UploadFile = File(...)
+):
 
-    script = f"{name} กำลังมาแรงในตอนนี้! {description} สนใจดูรายละเอียดเพิ่มเติมที่ลิงก์ด้านล่างเลย"
+    benefit_text = benefits.replace(",", " ")
 
-    filename = str(uuid.uuid4())
+    for i in range(count):
 
-    subprocess.run([
-        "edge-tts",
-        "--text", script,
-        "--write-media", f"{filename}.mp3"
-    ])
+        uid = str(uuid.uuid4())
+        image_path = f"{uid}.jpg"
+        audio_path = f"{uid}.mp3"
+        video_path = f"{uid}.mp4"
 
-    subprocess.run([
-        "ffmpeg",
-        "-f", "lavfi",
-        "-i", "color=c=black:s=720x1280:d=10",
-        "-i", f"{filename}.mp3",
-        "-shortest",
-        f"{filename}.mp4"
-    ])
+        with open(image_path, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
 
-    return FileResponse(f"{filename}.mp4", media_type="video/mp4", filename="tiktok_video.mp4")
+        hook = random.choice(hooks)
+        cta = random.choice(ctas)
+
+        script = f"""
+        {hook}
+        วันนี้มาแนะนำ {name}
+        จุดเด่นคือ {benefit_text}
+        {cta}
+        """
+
+        subprocess.run([
+            "edge-tts",
+            "--voice", "th-TH-PremwadeeNeural",
+            "--rate", "+8%",
+            "--pitch", "+6Hz",
+            "--text", script,
+            "--write-media", audio_path
+        ])
+
+        subprocess.run([
+            "ffmpeg",
+            "-loop","1",
+            "-i",image_path,
+            "-i",audio_path,
+            "-shortest",
+            video_path
+        ])
+
+    return {"status": f"สร้าง {count} คลิปเรียบร้อย"}
